@@ -5,8 +5,8 @@ Este projeto implementa a primeira parte do case da Passos Mágicos com foco em:
 - ingestão e padronização de dados (base antiga + base nova),
 - reconciliação por aluno/ano,
 - enriquecimento com tabelas relacionais,
-- criação da base gold para modelagem de risco de defasagem,
-- app Streamlit para inspeção rápida.
+- criação da base gold para modelagem de risco de defasagem/piora educacional,
+- app Streamlit para consulta do score de risco.
 
 ## Objetivo
 
@@ -56,7 +56,7 @@ Construir um fluxo reprodutível `Bronze -> Silver -> Gold` para responder pergu
 
 - Pipeline funcional e validado.
 - Silver enriquecido gerado.
-- Gold de risco gerado e utilizável para modelagem baseline.
+- Gold de risco gerado para modelagem supervisionada.
 
 Arquivos de saída principais:
 
@@ -75,16 +75,29 @@ Com a etapa de engenharia concluída, o projeto agora inclui:
   - Baseline: `LogisticRegression`.
   - Modelo principal: `RandomForestClassifier`.
   - Métricas: `ROC-AUC`, `Recall`, `F1` e `Matriz de Confusão`.
+  - Treino/teste com anos rotulados comparáveis (`2022-2023`).
+  - Aplicação do score nos alunos de `2024`, sem tratar 2024 como target real conhecido.
   - Importância de variáveis e geração de score (`data/gold/base_modelagem_risco_scored.csv`).
 - `app/streamlit_app.py`
-  - App atualizado para carregar a base gold pronta.
-  - Exibe score de risco por aluno e fatores principais (proxy explicativa baseada em importância + desvio da mediana).
+  - App atualizado para carregar a base com score.
+  - Exibe score de risco por aluno, classificação pelo threshold e fatores principais (proxy explicativa baseada em importância + desvio da mediana).
+
+### Decisão metodológica da modelagem
+
+O modelo segue o enunciado oficial do Datathon: prever **risco de defasagem/piora educacional** antes de queda de desempenho ou aumento de defasagem.
+
+Importante:
+
+- O score não é uma previsão direta de evasão ou retenção.
+- O `target_risco` é um proxy temporal construído a partir de piora futura nos indicadores.
+- O ano de `2024` não possui target real conhecido dentro da base, porque não há observação posterior disponível.
+- Por isso, `2024` é usado como base de aplicação/scoring, enquanto a avaliação supervisionada usa anos anteriores rotulados.
 
 ### Guia rápido de interpretação dos indicadores
 
 - `IAN` (Adequação de Nível):
   - Mede adequação do aluno ao nível esperado.
-  - Neste projeto, a regra de risco considera **aumento de IAN em t+1** como sinal de piora (`target_risco=1`).
+  - Neste projeto, entra na regra temporal do `target_risco` conforme a lógica operacional definida em `src/features/risk_target.py`.
 - `IDA` (Desempenho Acadêmico):
   - Resume desempenho escolar; em geral, valores maiores indicam melhor desempenho.
   - Queda de `IDA` em t+1 entra como critério de risco.
@@ -104,8 +117,8 @@ Com a etapa de engenharia concluída, o projeto agora inclui:
 
 Uso prático no projeto:
 
-- `Taxa média de risco (real)`: média de `target_risco`.
-- `Score de risco (previsto)`: probabilidade estimada pelo modelo para cada aluno.
+- `Taxa média de risco (real)`: média de `target_risco` apenas nos anos com rótulo conhecido.
+- `Score de risco (previsto)`: probabilidade estimada pelo modelo para cada aluno, incluindo aplicação em 2024.
 - `Taxa de risco por grupo`: média do risco por recorte (ano, fase, pedra, turma).
 
 ## Como Executar
