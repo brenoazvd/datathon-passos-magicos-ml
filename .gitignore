@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+.ipynb_checkpoints/
+.jupyter/
+
+DATATHON-*/
+POSTECH - Datathon - Fase 5 (2).pdf
+
+.DS_Store
+Thumbs.db
